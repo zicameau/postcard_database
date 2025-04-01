@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}User Settings | Postcard Database{% endblock %}
+
+{% block content %}
+<section class="user-settings">
+    <h1>User Settings</h1>
+    
+    <div class="settings-form">
+        <form action="{{ url_for('user_settings') }}" method="post">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" value="{{ user.email }}" disabled>
+                <small class="form-hint">Email cannot be changed</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="display_name">Display Name</label>
+                <input type="text" id="display_name" name="display_name" value="{{ user.user_metadata.display_name if user.user_metadata and 'display_name' in user.user_metadata else '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="current_password">Current Password</label>
+                <input type="password" id="current_password" name="current_password">
+            </div>
+            
+            <div class="form-group">
+                <label for="new_password">New Password (leave blank to keep current)</label>
+                <input type="password" id="new_password" name="new_password">
+            </div>
+            
+            <div class="form-group">
+                <label for="confirm_password">Confirm New Password</label>
+                <input type="password" id="confirm_password" name="confirm_password">
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+    
+    <div class="danger-zone">
+        <h2>Danger Zone</h2>
+        <p>Permanently delete your account and all associated data.</p>
+        <button type="button" class="btn danger" id="delete-account-btn">Delete Account</button>
+    </div>
+    
+    <!-- Delete account confirmation modal -->
+    <div class="modal" id="delete-account-modal">
+        <div class="modal-content">
+            <h3>Confirm Account Deletion</h3>
+            <p>Are you sure you want to delete your account? This action cannot be undone and will permanently delete all your data.</p>
+            <div class="modal-actions">
+                <form action="{{ url_for('delete_account') if 'delete_account' in url_for.__globals__ else '#' }}" method="post">
+                    <button type="submit" class="btn danger">Delete My Account</button>
+                </form>
+                <button type="button" class="btn secondary" id="cancel-delete-account">Cancel</button>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const deleteBtn = document.getElementById('delete-account-btn');
+        const cancelBtn = document.getElementById('cancel-delete-account');
+        const modal = document.getElementById('delete-account-modal');
+        
+        deleteBtn.addEventListener('click', function() {
+            modal.classList.add('visible');
+        });
+        
+        cancelBtn.addEventListener('click', function() {
+            modal.classList.remove('visible');
+        });
+    });
+</script>
+{% endblock %}

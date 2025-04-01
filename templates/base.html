@@ -17,15 +17,12 @@
                 <ul>
                     <li><a href="{{ url_for('index') }}">Home</a></li>
                     <li><a href="{{ url_for('list_postcards') }}">Browse Postcards</a></li>
-                    {% if current_user.is_authenticated %}
+                    {% if 'user_id' in session %}
                         <li><a href="{{ url_for('add_postcard') }}">Add Postcard</a></li>
-                        {% if current_user.is_admin %}
-                            <li><a href="{{ url_for('admin_users') }}">Manage Users</a></li>
-                        {% endif %}
-                        <li class="user-menu">
-                            <a href="#" class="user-dropdown">{{ current_user.username }} ▼</a>
+                        <li class="user-dropdown">
+                            <a href="#" class="dropdown-trigger">{{ session['email'] }} <span class="dropdown-arrow">▼</span></a>
                             <ul class="dropdown-menu">
-                                <li><a href="{{ url_for('user_profile') }}">Profile</a></li>
+                                <li><a href="{{ url_for('user_settings') if 'user_settings' in url_for.__globals__ else '#' }}">Settings</a></li>
                                 <li><a href="{{ url_for('logout') }}">Logout</a></li>
                             </ul>
                         </li>
@@ -64,28 +61,5 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
-    
-    <script>
-        // Handle user dropdown menu
-        document.addEventListener('DOMContentLoaded', function() {
-            const userDropdown = document.querySelector('.user-dropdown');
-            if (userDropdown) {
-                userDropdown.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    this.parentNode.classList.toggle('active');
-                });
-            }
-            
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.matches('.user-dropdown')) {
-                    const dropdowns = document.querySelectorAll('.user-menu.active');
-                    dropdowns.forEach(dropdown => {
-                        dropdown.classList.remove('active');
-                    });
-                }
-            });
-        });
-    </script>
 </body>
 </html>

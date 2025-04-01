@@ -4,11 +4,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add date filter functionality
     setupDateFilters();
     
-    // Add custom datetime filter for Jinja
-    addDateTimeFilter();
-    
-    // Add line break filter for Jinja
-    addLineBreakFilter();
+    // Add dropdown functionality for mobile
+    setupMobileDropdown();
     
     // Handle flash message dismissal
     setupFlashMessages();
@@ -32,31 +29,40 @@ function setupDateFilters() {
 }
 
 /**
- * Add a custom filter to format datetime values
+ * Setup dropdown functionality for mobile devices
  */
-function addDateTimeFilter() {
-    // This would typically be done server-side in Flask, but we include it here for reference
-    // Using a template filter like:
-    //
-    // @app.template_filter('datetime')
-    // def format_datetime(value, format='%B %d, %Y'):
-    //     if value:
-    //         return value.strftime(format)
-    //     return ''
-}
-
-/**
- * Add a custom filter to convert newlines to <br> tags
- */
-function addLineBreakFilter() {
-    // This would typically be done server-side in Flask, but we include it here for reference
-    // Using a template filter like:
-    //
-    // @app.template_filter('nl2br')
-    // def nl2br(value):
-    //     if value:
-    //         return Markup(value.replace('\n', '<br>'))
-    //     return ''
+function setupMobileDropdown() {
+    // For mobile: make dropdown work with click instead of hover
+    if (window.innerWidth <= 768) {
+        const dropdownTriggers = document.querySelectorAll('.dropdown-trigger');
+        
+        dropdownTriggers.forEach(trigger => {
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                const dropdown = this.parentNode;
+                const menu = dropdown.querySelector('.dropdown-menu');
+                
+                // Close all other open dropdowns
+                document.querySelectorAll('.dropdown-menu.active').forEach(openMenu => {
+                    if (openMenu !== menu) {
+                        openMenu.classList.remove('active');
+                    }
+                });
+                
+                // Toggle this dropdown
+                menu.classList.toggle('active');
+            });
+        });
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.user-dropdown')) {
+                document.querySelectorAll('.dropdown-menu.active').forEach(menu => {
+                    menu.classList.remove('active');
+                });
+            }
+        });
+    }
 }
 
 /**

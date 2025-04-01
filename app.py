@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
@@ -31,6 +31,25 @@ def index():
     # Get the latest postcards
     postcards = PostcardDB.get_all_postcards(limit=8)
     return render_template('index.html', postcards=postcards)
+
+@app.route('/user/settings', methods=['GET', 'POST'])
+@login_required
+def user_settings():
+    """User settings page"""
+    if request.method == 'POST':
+        # Handle user settings update
+        # This is a stub - you'd implement actual settings updates here
+        flash('Settings updated successfully', 'success')
+        return redirect(url_for('user_settings'))
+    
+    # Get current user from Supabase
+    try:
+        user = supabase.auth.get_user(session['supabase_access_token'])
+        return render_template('auth/settings.html', user=user.user)
+    except Exception as e:
+        app.logger.error(f"Error getting user: {str(e)}")
+        flash('Error retrieving user data', 'error')
+        return redirect(url_for('index'))
 
 @app.route('/postcards')
 def list_postcards():
