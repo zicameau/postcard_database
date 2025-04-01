@@ -10,6 +10,7 @@ from utils.user_db import UserDB
 from utils.image_handler import save_image, delete_image
 from utils.template_filters import register_filters
 from utils.auth import User, init_login_manager, requires_admin
+from utils.supabase_auth import SupabaseAuth
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -89,7 +90,6 @@ def view_postcard(postcard_id):
     
     return render_template('postcards/detail.html', postcard=postcard, tags=tags)
 
-# Authentication routes
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """User login page"""
@@ -104,11 +104,16 @@ def login():
             flash('Please enter both email and password', 'error')
             return redirect(url_for('login'))
         
-        user_data = UserDB.authenticate_user(email, password)
+        # Use Supabase Auth to log in
+        auth_response = SupabaseAuth.login_user(email, password)
         
-        if user_data:
-            user = User(user_data)
+        if auth_response and auth_response.user:
+            user = User(auth_response.user)
             login_user(user)
+            
+            # Store Supabase session in Flask session
+            session['supabase_access_token'] = auth_response.session.access_token
+            session['supabase_refresh_token'] = auth_response.session.refresh_token
             
             # Redirect to the page the user was trying to access
             next_page = request.args.get('next')
@@ -141,26 +146,19 @@ def register():
             flash('Passwords do not match', 'error')
             return redirect(url_for('register'))
         
-        # Check if email already exists
-        existing_user = UserDB.get_user_by_email(email)
-        if existing_user:
-            flash('Email already in use', 'error')
-            return redirect(url_for('register'))
+        # Register with Supabase Auth
+        metadata = {
+            'username': username,
+            'role': 'user'  # Default role
+        }
         
-        # Check if username already exists
-        existing_user = UserDB.get_user_by_username(username)
-        if existing_user:
-            flash('Username already in use', 'error')
-            return redirect(url_for('register'))
+        auth_response = SupabaseAuth.register_user(email, password, username, metadata)
         
-        # Create new user
-        user_data = UserDB.create_user(username, email, password)
-        
-        if user_data:
-            flash('Registration successful! You can now log in.', 'success')
+        if auth_response and auth_response.user:
+            flash('Registration successful! Please check your email to verify your account.', 'success')
             return redirect(url_for('login'))
         else:
-            flash('Registration failed. Please try again.', 'error')
+            flash('Registration failed. Email may already be in use.', 'error')
     
     return render_template('auth/register.html')
 
@@ -168,7 +166,14 @@ def register():
 @login_required
 def logout():
     """Log out the current user"""
+    # Clear Supabase session
+    SupabaseAuth.logout_user()
+    session.pop('supabase_access_token', None)
+    session.pop('supabase_refresh_token', None)
+    
+    # Log out of Flask-Login
     logout_user()
+    
     flash('You have been logged out.', 'success')
     return redirect(url_for('index'))
 

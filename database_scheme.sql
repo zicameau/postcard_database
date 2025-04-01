@@ -174,3 +174,17 @@ Storage Policies:
       )
     );
 */
+
+-- Note about Supabase Auth configuration
+/*
+For Supabase Auth, you'll need to:
+1. Enable email confirmations in the Auth settings
+2. Configure SMTP settings for email delivery
+3. Set up any additional OAuth providers if needed
+
+In the Supabase dashboard:
+- Go to Authentication > Settings
+- Enable "Enable email confirmations"
+- Configure SMTP settings
+- Set Site URL to your application URL
+*/
