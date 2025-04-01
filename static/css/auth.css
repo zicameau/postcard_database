@@ -1,0 +1,181 @@
+/* Authentication Forms */
+.auth-form {
+    max-width: 500px;
+    margin: 2rem auto;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 2rem;
+}
+
+.auth-form h1 {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.auth-links {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+/* Admin Dashboard */
+.admin-dashboard {
+    margin-bottom: 3rem;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background-color: white;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--box-shadow);
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--light-gray);
+}
+
+.admin-table th {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+}
+
+.admin-table tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.admin-table .table-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.admin-table .no-data {
+    text-align: center;
+    color: var(--mid-gray);
+    padding: 2rem;
+}
+
+.user-role {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+}
+
+.user-role.admin {
+    background-color: rgba(255, 102, 51, 0.1);
+    color: var(--accent-color);
+}
+
+.user-role.user {
+    background-color: rgba(0, 102, 204, 0.1);
+    color: var(--primary-color);
+}
+
+.btn.small {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* User dropdown menu */
+.user-menu {
+    position: relative;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: white;
+    box-shadow: var(--box-shadow);
+    border-radius: var(--border-radius);
+    min-width: 150px;
+    z-index: 100;
+}
+
+.user-menu.active .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu li {
+    margin: 0;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--text-color);
+}
+
+.dropdown-menu a:hover {
+    background-color: var(--light-gray);
+    text-decoration: none;
+}
+
+.user-dropdown {
+    display: flex;
+    align-items: center;
+}
+
+/* User profile */
+.user-profile {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.profile-section {
+    margin-bottom: 2rem;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+}
+
+.profile-section h2 {
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--light-gray);
+}
+
+.profile-data {
+    margin-bottom: 1.5rem;
+}
+
+.profile-item {
+    display: flex;
+    margin-bottom: 1rem;
+}
+
+.profile-item label {
+    font-weight: 500;
+    width: 120px;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.empty-collection {
+    padding: 2rem;
+    text-align: center;
+}
+
+.empty-collection p {
+    color: var(--dark-gray);
+    margin-bottom: 1rem;
+}
+
+.admin-form {
+    max-width: 600px;
+    margin: 2rem auto;
+}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User | Admin Dashboard{% endblock %}
+
+{% block content %}
+<section class="admin-dashboard">
+    <h1>Edit User</h1>
+    
+    <div class="auth-form admin-form">
+        <form action="{{ url_for('admin_edit_user', user_id=user.id) }}" method="post">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required value="{{ user.username }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required value="{{ user.email }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="role">Role</label>
+                <select id="role" name="role">
+                    <option value="user" {% if user.role == 'user' %}selected{% endif %}>User</option>
+                    <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                </select>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="btn primary">Save Changes</button>
+                <a href="{{ url_for('admin_users') }}" class="btn secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
