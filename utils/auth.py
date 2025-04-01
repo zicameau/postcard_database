@@ -7,11 +7,30 @@ from utils.supabase_auth import SupabaseAuth
 
 # User class for Flask-Login
 class User(UserMixin):
+
     def __init__(self, user_data):
-        self.id = user_data['id']
-        self.email = user_data['email']
-        self.username = user_data.get('username') or user_data.get('user_metadata', {}).get('username', self.email)
-        self.role = user_data.get('role') or user_data.get('user_metadata', {}).get('role', 'user')
+        # Check if user_data is already a Supabase User object
+        if hasattr(user_data, 'id'):
+            self.id = user_data.id
+            self.email = user_data.email
+            
+            # Get metadata from Supabase user object
+            metadata = getattr(user_data, 'user_metadata', {}) or {}
+            self.username = metadata.get('username', self.email)
+            self.role = metadata.get('role', 'user')
+        else:
+            # Handle dictionary data (from your database)
+            self.id = user_data['id']
+            self.email = user_data['email']
+            self.username = user_data.get('username', self.email)
+            
+            # Get role from either top-level or nested metadata
+            if 'role' in user_data:
+                self.role = user_data['role']
+            elif 'user_metadata' in user_data and 'role' in user_data['user_metadata']:
+                self.role = user_data['user_metadata']['role']
+            else:
+                self.role = 'user'
     
     @property
     def is_admin(self):

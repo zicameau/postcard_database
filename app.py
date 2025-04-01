@@ -107,13 +107,14 @@ def login():
         # Use Supabase Auth to log in
         auth_response = SupabaseAuth.login_user(email, password)
         
-        if auth_response and auth_response.user:
+        if auth_response and hasattr(auth_response, 'user') and auth_response.user:
             user = User(auth_response.user)
             login_user(user)
             
-            # Store Supabase session in Flask session
-            session['supabase_access_token'] = auth_response.session.access_token
-            session['supabase_refresh_token'] = auth_response.session.refresh_token
+            # Store Supabase session in Flask session if it exists
+            if hasattr(auth_response, 'session'):
+                session['supabase_access_token'] = auth_response.session.access_token
+                session['supabase_refresh_token'] = auth_response.session.refresh_token
             
             # Redirect to the page the user was trying to access
             next_page = request.args.get('next')
