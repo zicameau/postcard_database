@@ -29,15 +29,39 @@ function setupDateFilters() {
 }
 
 /**
- * Setup dropdown functionality for mobile devices
+ * Setup dropdown functionality for mobile devices and desktop
  */
 function setupMobileDropdown() {
     const dropdownTriggers = document.querySelectorAll('.dropdown-trigger');
     
     dropdownTriggers.forEach(trigger => {
+        let dropdownTimeout;
+        const dropdown = trigger.closest('.user-dropdown');
+        const dropdownMenu = dropdown.querySelector('.dropdown-menu');
+        
+        // Hover and click events for desktop
+        dropdown.addEventListener('mouseenter', function() {
+            // Clear any existing timeout
+            clearTimeout(dropdownTimeout);
+            
+            // Show dropdown with a slight delay to prevent accidental closing
+            dropdownTimeout = setTimeout(() => {
+                dropdown.classList.add('active');
+            }, 100);
+        });
+        
+        dropdown.addEventListener('mouseleave', function() {
+            // Clear timeout and close dropdown after a short delay
+            clearTimeout(dropdownTimeout);
+            dropdownTimeout = setTimeout(() => {
+                dropdown.classList.remove('active');
+            }, 200);
+        });
+        
+        // Click event for mobile and as a fallback
         trigger.addEventListener('click', function(e) {
             e.preventDefault();
-            const dropdown = this.closest('.user-dropdown');
+            e.stopPropagation();
             
             // Toggle this dropdown
             dropdown.classList.toggle('active');
@@ -48,6 +72,18 @@ function setupMobileDropdown() {
                     openDropdown.classList.remove('active');
                 }
             });
+        });
+        
+        // Prevent dropdown from closing immediately when interacting with menu
+        dropdownMenu.addEventListener('mouseenter', function() {
+            clearTimeout(dropdownTimeout);
+        });
+        
+        dropdownMenu.addEventListener('mouseleave', function() {
+            clearTimeout(dropdownTimeout);
+            dropdownTimeout = setTimeout(() => {
+                dropdown.classList.remove('active');
+            }, 200);
         });
     });
     

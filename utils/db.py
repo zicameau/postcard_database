@@ -90,6 +90,27 @@ class PostcardDB:
         ]
         return eras
 
+    @staticmethod
+    def get_user_postcards(user_id, limit=20, offset=0):
+        """Fetch all postcards for a specific user"""
+        query = supabase.table('postcards').select('*').eq('user_id', user_id)
+        
+        # Apply ordering
+        query = query.order('created_at', desc=True)
+        
+        # Apply limit
+        query = query.limit(limit)
+        
+        # Handle pagination
+        if offset > 0:
+            start = offset
+            end = offset + limit - 1
+            query = query.range(start, end)
+        
+        result = query.execute()
+        
+        return result.data
+
 class TagDB:
     @staticmethod
     def get_all_tags():
