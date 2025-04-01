@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Postcard Database - Home{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Welcome to the Postcard Database</h1>
+    <p>A comprehensive collection of postcards from around the world and throughout history.</p>
+    <div class="actions">
+        <a href="{{ url_for('list_postcards') }}" class="btn primary">Browse Collection</a>
+        <a href="{{ url_for('add_postcard') }}" class="btn secondary">Add Postcard</a>
+    </div>
+</section>
+
+<section class="featured">
+    <h2>Featured Postcards</h2>
+    <div class="postcard-grid">
+        {% if postcards %}
+            {% for postcard in postcards %}
+                <div class="postcard-card">
+                    <a href="{{ url_for('view_postcard', postcard_id=postcard.id) }}">
+                        {% if postcard.front_image_url %}
+                            <img src="{{ postcard.front_image_url }}" alt="{{ postcard.title }}" class="postcard-image">
+                        {% else %}
+                            <div class="postcard-placeholder">No Image</div>
+                        {% endif %}
+                        <div class="postcard-info">
+                            <h3>{{ postcard.title }}</h3>
+                            <p class="era">{{ postcard.era }}</p>
+                            <p class="type">{{ postcard.type }}</p>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-postcards">No postcards found. <a href="{{ url_for('add_postcard') }}">Add the first one!</a></p>
+        {% endif %}
+    </div>
+</section>
+
+<section class="about">
+    <h2>About the Collection</h2>
+    <p>The Postcard Database aims to be a comprehensive repository of postcards from all eras and regions. Our collection includes Real Photo Postcards (RPPC), Divided Back, Undivided Back, Linen, Chrome, and Continental types.</p>
+    <p>Each postcard is cataloged with details about its era, manufacturer, whether it has been posted, and if it contains handwritten messages.</p>
+</section>
+{% endblock %}

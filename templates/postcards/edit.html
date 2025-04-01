@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Postcard | Postcard Database{% endblock %}
+
+{% block content %}
+<section class="postcard-form">
+    <h1>Edit Postcard</h1>
+    
+    <form action="{{ url_for('edit_postcard', postcard_id=postcard.id) }}" method="post" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="title">Title *</label>
+            <input type="text" id="title" name="title" required value="{{ postcard.title }}">
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="5">{{ postcard.description or '' }}</textarea>
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group half">
+                <label for="era">Era</label>
+                <select id="era" name="era">
+                    <option value="">-- Select Era --</option>
+                    {% for era in eras %}
+                        <option value="{{ era }}" {% if postcard.era == era %}selected{% endif %}>{{ era }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group half">
+                <label for="type">Type</label>
+                <select id="type" name="type">
+                    <option value="">-- Select Type --</option>
+                    {% for type in types %}
+                        <option value="{{ type }}" {% if postcard.type == type %}selected{% endif %}>{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="manufacturer">Manufacturer</label>
+            <input type="text" id="manufacturer" name="manufacturer" value="{{ postcard.manufacturer or '' }}">
+        </div>
+        
+        <div class="form-row checkboxes">
+            <div class="form-group checkbox">
+                <input type="checkbox" id="is_posted" name="is_posted" {% if postcard.is_posted %}checked{% endif %}>
+                <label for="is_posted">Postcard has been posted (used)</label>
+            </div>
+            
+            <div class="form-group checkbox">
+                <input type="checkbox" id="is_written" name="is_written" {% if postcard.is_written %}checked{% endif %}>
+                <label for="is_written">Postcard has writing on it</label>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="tags">Tags (comma separated)</label>
+            <input type="text" id="tags" name="tags" placeholder="vintage, nature, europe, etc." 
+                   value="{% if tags %}{% for tag in tags %}{{ tag.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}">
+        </div>
+        
+        <div class="form-row">
+            <div class="form-group half">
+                <label for="front_image">Front Image</label>
+                <div class="image-upload">
+                    <input type="file" id="front_image" name="front_image" accept="image/*">
+                    <div class="image-preview" id="front-preview">
+                        {% if postcard.front_image_url %}
+                            <img src="{{ postcard.front_image_url }}" alt="Front Image">
+                        {% else %}
+                            <div class="placeholder">No image selected</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group half">
+                <label for="back_image">Back Image</label>
+                <div class="image-upload">
+                    <input type="file" id="back_image" name="back_image" accept="image/*">
+                    <div class="image-preview" id="back-preview">
+                        {% if postcard.back_image_url %}
+                            <img src="{{ postcard.back_image_url }}" alt="Back Image">
+                        {% else %}
+                            <div class="placeholder">No image selected</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-actions">
+            <button type="submit" class="btn primary">Save Changes</button>
+            <a href="{{ url_for('view_postcard', postcard_id=postcard.id) }}" class="btn secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Front image preview
+        const frontInput = document.getElementById('front_image');
+        const frontPreview = document.getElementById('front-preview');
+        
+        frontInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    frontPreview.innerHTML = `<img src="${e.target.result}" alt="Front Image Preview">`;
+                }
+                
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+        
+        // Back image preview
+        const backInput = document.getElementById('back_image');
+        const backPreview = document.getElementById('back-preview');
+        
+        backInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    backPreview.innerHTML = `<img src="${e.target.result}" alt="Back Image Preview">`;
+                }
+                
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Postcards{% endblock %}
+
+{% block content %}
+<section class="postcards-list">
+    <h1>Browse Postcards</h1>
+    
+    <div class="filters">
+        <form action="{{ url_for('list_postcards') }}" method="get" id="filter-form">
+            <div class="filter-group">
+                <label for="era">Era:</label>
+                <select name="era" id="era">
+                    <option value="">All Eras</option>
+                    {% for era in eras %}
+                        <option value="{{ era }}" {% if current_filters.era == era %}selected{% endif %}>{{ era }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="type">Type:</label>
+                <select name="type" id="type">
+                    <option value="">All Types</option>
+                    {% for type in types %}
+                        <option value="{{ type }}" {% if current_filters.type == type %}selected{% endif %}>{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="manufacturer">Manufacturer:</label>
+                <input type="text" name="manufacturer" id="manufacturer" value="{{ current_filters.manufacturer or '' }}">
+            </div>
+            
+            <div class="filter-group checkbox">
+                <input type="checkbox" name="is_posted" id="is_posted" {% if current_filters.is_posted %}checked{% endif %}>
+                <label for="is_posted">Posted</label>
+            </div>
+            
+            <div class="filter-group checkbox">
+                <input type="checkbox" name="is_written" id="is_written" {% if current_filters.is_written %}checked{% endif %}>
+                <label for="is_written">Written</label>
+            </div>
+            
+            <div class="filter-actions">
+                <button type="submit" class="btn primary">Apply Filters</button>
+                <a href="{{ url_for('list_postcards') }}" class="btn secondary">Clear Filters</a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="postcard-grid">
+        {% if postcards %}
+            {% for postcard in postcards %}
+                <div class="postcard-card">
+                    <a href="{{ url_for('view_postcard', postcard_id=postcard.id) }}">
+                        {% if postcard.front_image_url %}
+                            <img src="{{ postcard.front_image_url }}" alt="{{ postcard.title }}" class="postcard-image">
+                        {% else %}
+                            <div class="postcard-placeholder">No Image</div>
+                        {% endif %}
+                        <div class="postcard-info">
+                            <h3>{{ postcard.title }}</h3>
+                            <p class="era">{{ postcard.era }}</p>
+                            <p class="type">{{ postcard.type }}</p>
+                            {% if postcard.is_posted %}<span class="badge posted">Posted</span>{% endif %}
+                            {% if postcard.is_written %}<span class="badge written">Written</span>{% endif %}
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p class="no-postcards">No postcards found matching your criteria.</p>
+        {% endif %}
+    </div>
+    
+    <div class="pagination">
+        {% if page > 1 %}
+            <a href="{{ url_for('list_postcards', page=page-1, **current_filters) }}" class="btn pagination-prev">Previous</a>
+        {% endif %}
+        
+        <span class="pagination-current">Page {{ page }}</span>
+        
+        {% if postcards|length == 20 %}
+            <a href="{{ url_for('list_postcards', page=page+1, **current_filters) }}" class="btn pagination-next">Next</a>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto-submit form when select changes
+        const selects = document.querySelectorAll('#filter-form select');
+        selects.forEach(select => {
+            select.addEventListener('change', function() {
+                document.getElementById('filter-form').submit();
+            });
+        });
+    });
+</script>
+{% endblock %}
