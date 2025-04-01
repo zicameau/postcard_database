@@ -46,18 +46,22 @@ def init_login_manager(app):
     @login_manager.user_loader
     def load_user(user_id):
         try:
-            # Instead of getting user by ID, use the session
+            # Try to get user from Supabase Auth using the session
             if 'supabase_access_token' in session:
-                # Set the session in the client
                 supabase.auth.set_session(session['supabase_access_token'], session['supabase_refresh_token'])
-                auth_user = SupabaseAuth.get_user()
-                if auth_user and hasattr(auth_user, 'user') and auth_user.user:
-                    return User(auth_user.user)
+                
+                # Get current authenticated user from Supabase
+                auth_response = SupabaseAuth.get_user()
+                
+                if auth_response and hasattr(auth_response, 'user') and auth_response.user:
+                    # Check if the authenticated user matches the user_id
+                    if str(auth_response.user.id) == str(user_id):
+                        return User(auth_response.user)
         except Exception as e:
             print(f"Supabase Auth error in load_user: {str(e)}")
         
+        # Fallback to database
         try:
-            # Fallback to database
             db_user = UserDB.get_user_by_id(user_id)
             if db_user:
                 return User(db_user)

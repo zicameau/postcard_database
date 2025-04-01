@@ -50,11 +50,10 @@ class SupabaseAuth:
             return None
     
     @staticmethod
-    def get_user(user_id):
-        """Get user data from Supabase Auth"""
+    def get_user():
+        """Get current user data from Supabase Auth"""
         try:
-            print(f"Attempting to get user from Supabase with ID: {user_id}")
-            # Instead of using admin API, use the current user session
+            # Get the current authenticated user from the session
             response = supabase.auth.get_user()
             return response
         except Exception as e:
