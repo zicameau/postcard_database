@@ -42,14 +42,8 @@ def user_settings():
         flash('Settings updated successfully', 'success')
         return redirect(url_for('user_settings'))
     
-    # Get current user from Supabase
-    try:
-        user = supabase.auth.get_user(session['supabase_access_token'])
-        return render_template('auth/settings.html', user=user.user)
-    except Exception as e:
-        app.logger.error(f"Error getting user: {str(e)}")
-        flash('Error retrieving user data', 'error')
-        return redirect(url_for('index'))
+    # Use current_user directly instead of trying to fetch from Supabase again
+    return render_template('auth/settings.html', user=current_user)
 
 @app.route('/postcards')
 def list_postcards():

@@ -32,37 +32,33 @@ function setupDateFilters() {
  * Setup dropdown functionality for mobile devices
  */
 function setupMobileDropdown() {
-    // For mobile: make dropdown work with click instead of hover
-    if (window.innerWidth <= 768) {
-        const dropdownTriggers = document.querySelectorAll('.dropdown-trigger');
-        
-        dropdownTriggers.forEach(trigger => {
-            trigger.addEventListener('click', function(e) {
-                e.preventDefault();
-                const dropdown = this.parentNode;
-                const menu = dropdown.querySelector('.dropdown-menu');
-                
-                // Close all other open dropdowns
-                document.querySelectorAll('.dropdown-menu.active').forEach(openMenu => {
-                    if (openMenu !== menu) {
-                        openMenu.classList.remove('active');
-                    }
-                });
-                
-                // Toggle this dropdown
-                menu.classList.toggle('active');
+    const dropdownTriggers = document.querySelectorAll('.dropdown-trigger');
+    
+    dropdownTriggers.forEach(trigger => {
+        trigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dropdown = this.closest('.user-dropdown');
+            
+            // Toggle this dropdown
+            dropdown.classList.toggle('active');
+            
+            // Close all other open dropdowns
+            document.querySelectorAll('.user-dropdown.active').forEach(openDropdown => {
+                if (openDropdown !== dropdown) {
+                    openDropdown.classList.remove('active');
+                }
             });
         });
-        
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.user-dropdown')) {
-                document.querySelectorAll('.dropdown-menu.active').forEach(menu => {
-                    menu.classList.remove('active');
-                });
-            }
-        });
-    }
+    });
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown-trigger')) {
+            document.querySelectorAll('.user-dropdown.active').forEach(dropdown => {
+                dropdown.classList.remove('active');
+            });
+        }
+    });
 }
 
 /**

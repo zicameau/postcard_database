@@ -17,12 +17,18 @@
                 <ul>
                     <li><a href="{{ url_for('index') }}">Home</a></li>
                     <li><a href="{{ url_for('list_postcards') }}">Browse Postcards</a></li>
-                    {% if 'user_id' in session %}
+                    {% if current_user.is_authenticated %}
                         <li><a href="{{ url_for('add_postcard') }}">Add Postcard</a></li>
                         <li class="user-dropdown">
-                            <a href="#" class="dropdown-trigger">{{ session['email'] }} <span class="dropdown-arrow">▼</span></a>
+                            <a href="#" class="dropdown-trigger">
+                                {{ current_user.username }} <span class="dropdown-arrow">▼</span>
+                            </a>
                             <ul class="dropdown-menu">
-                                <li><a href="{{ url_for('user_settings') if 'user_settings' in url_for.__globals__ else '#' }}">Settings</a></li>
+                                <li><a href="{{ url_for('user_profile') }}">My Profile</a></li>
+                                <li><a href="{{ url_for('user_settings') }}">Settings</a></li>
+                                {% if current_user.is_admin %}
+                                    <li><a href="{{ url_for('admin_users') }}">Admin Panel</a></li>
+                                {% endif %}
                                 <li><a href="{{ url_for('logout') }}">Logout</a></li>
                             </ul>
                         </li>
