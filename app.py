@@ -1,13 +1,13 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from werkzeug.utils import secure_filename
-from werkzeug.security import check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 from functools import wraps
 import os
 from config import Config
 from utils.db import PostcardDB, TagDB
 from utils.user_db import UserDB
-from utils.image_handler import save_image, delete_image
+from utils.image_handler import save_image, delete_image, verify_storage_settings
 from utils.template_filters import register_filters
 from utils.auth import User, init_login_manager, requires_admin
 from utils.supabase_auth import SupabaseAuth
@@ -23,6 +23,10 @@ login_manager = init_login_manager(app)
 
 # Register custom template filters
 register_filters(app)
+
+# Verify storage settings on startup - don't use before_first_request
+with app.app_context():
+    verify_storage_settings()
 
 # Routes for public access
 @app.route('/')
@@ -106,6 +110,11 @@ def view_postcard(postcard_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """User login page"""
+    # Clear any existing invalid sessions first
+    if 'supabase_access_token' in session:
+        session.pop('supabase_access_token', None)
+        session.pop('supabase_refresh_token', None)
+    
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     
@@ -118,24 +127,28 @@ def login():
             return redirect(url_for('login'))
         
         # Use Supabase Auth to log in
-        auth_response = SupabaseAuth.login_user(email, password)
-        
-        if auth_response and hasattr(auth_response, 'user') and auth_response.user:
-            user = User(auth_response.user)
-            login_user(user)
+        try:
+            auth_response = SupabaseAuth.login_user(email, password)
             
-            # Store Supabase session in Flask session if it exists
-            if hasattr(auth_response, 'session'):
-                session['supabase_access_token'] = auth_response.session.access_token
-                session['supabase_refresh_token'] = auth_response.session.refresh_token
-            
-            # Redirect to the page the user was trying to access
-            next_page = request.args.get('next')
-            if next_page:
-                return redirect(next_page)
-            return redirect(url_for('index'))
-        else:
-            flash('Invalid email or password', 'error')
+            if auth_response and hasattr(auth_response, 'user') and auth_response.user:
+                user = User(auth_response.user)
+                login_user(user)
+                
+                # Store Supabase session in Flask session if it exists
+                if hasattr(auth_response, 'session'):
+                    session['supabase_access_token'] = auth_response.session.access_token
+                    session['supabase_refresh_token'] = auth_response.session.refresh_token
+                
+                # Redirect to the page the user was trying to access
+                next_page = request.args.get('next')
+                if next_page:
+                    return redirect(next_page)
+                return redirect(url_for('index'))
+            else:
+                flash('Invalid email or password', 'error')
+        except Exception as e:
+            app.logger.error(f"Login error: {str(e)}")
+            flash('Login failed. Please try again.', 'error')
     
     return render_template('auth/login.html')
 
@@ -160,19 +173,57 @@ def register():
             flash('Passwords do not match', 'error')
             return redirect(url_for('register'))
         
-        # Register with Supabase Auth
-        metadata = {
-            'username': username,
-            'role': 'user'  # Default role
-        }
+        # Check if username already exists
+        existing_user = UserDB.get_user_by_username(username)
+        if existing_user:
+            flash('Username is already in use', 'error')
+            return redirect(url_for('register'))
         
-        auth_response = SupabaseAuth.register_user(email, password, username, metadata)
+        # Check if email already exists
+        existing_user = UserDB.get_user_by_email(email)
+        if existing_user:
+            flash('Email is already in use', 'error')
+            return redirect(url_for('register'))
         
-        if auth_response and auth_response.user:
-            flash('Registration successful! Please check your email to verify your account.', 'success')
-            return redirect(url_for('login'))
-        else:
-            flash('Registration failed. Email may already be in use.', 'error')
+        try:
+            # First create the user in Supabase Auth
+            metadata = {
+                'username': username,
+                'role': 'user'  # Default role
+            }
+            
+            auth_response = SupabaseAuth.register_user(email, password, username, metadata)
+            
+            if auth_response and hasattr(auth_response, 'user') and auth_response.user:
+                # Now create the user in the database
+                user_data = {
+                    'id': auth_response.user.id,
+                    'email': email,
+                    'username': username,
+                    'role': 'user',
+                    'password_hash': generate_password_hash(password)
+                }
+                
+                user_created = UserDB.create_user_from_auth(user_data)
+                
+                if user_created:
+                    flash('Registration successful! Please check your email to verify your account.', 'success')
+                    return redirect(url_for('login'))
+                else:
+                    flash('User created in authentication system, but database creation failed.', 'warning')
+                    return redirect(url_for('login'))
+            else:
+                flash('Registration failed. Please try again.', 'error')
+        except Exception as e:
+            error_message = str(e)
+            app.logger.error(f"Registration error: {error_message}")
+            
+            if 'already been registered' in error_message:
+                flash('Email is already registered', 'error')
+            elif 'SupabaseAuth' in error_message and 'delete_user' in error_message:
+                flash('Registration error: Authentication system configuration issue', 'error')
+            else:
+                flash(f'Registration error: {error_message}', 'error')
     
     return render_template('auth/register.html')
 

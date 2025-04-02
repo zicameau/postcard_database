@@ -2,14 +2,17 @@ from supabase import create_client
 from config import Config
 import uuid
 
-# Initialize Supabase client
+# Initialize regular Supabase client
 supabase = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
+
+# Initialize admin Supabase client with service role key
+admin_supabase = create_client(Config.SUPABASE_URL, Config.SUPABASE_SERVICE_KEY)
 
 class PostcardDB:
     @staticmethod
     def get_all_postcards(limit=20, offset=0, filters=None):
         """Fetch all postcards with optional filtering and pagination"""
-        query = supabase.table('postcards').select('*')
+        query = admin_supabase.table('postcards').select('*')
         
         if filters:
             for field, value in filters.items():
@@ -38,7 +41,7 @@ class PostcardDB:
     @staticmethod
     def get_postcard(postcard_id):
         """Fetch a single postcard by ID"""
-        result = supabase.table('postcards').select('*').eq('id', postcard_id).execute()
+        result = admin_supabase.table('postcards').select('*').eq('id', postcard_id).execute()
         
         if result.data:
             return result.data[0]
@@ -51,7 +54,7 @@ class PostcardDB:
         if 'id' not in postcard_data:
             postcard_data['id'] = str(uuid.uuid4())
             
-        result = supabase.table('postcards').insert(postcard_data).execute()
+        result = admin_supabase.table('postcards').insert(postcard_data).execute()
         
         if result.data:
             return result.data[0]
@@ -60,7 +63,7 @@ class PostcardDB:
     @staticmethod
     def update_postcard(postcard_id, postcard_data):
         """Update an existing postcard"""
-        result = supabase.table('postcards').update(postcard_data).eq('id', postcard_id).execute()
+        result = admin_supabase.table('postcards').update(postcard_data).eq('id', postcard_id).execute()
         
         if result.data:
             return result.data[0]
@@ -69,7 +72,7 @@ class PostcardDB:
     @staticmethod
     def delete_postcard(postcard_id):
         """Delete a postcard"""
-        result = supabase.table('postcards').delete().eq('id', postcard_id).execute()
+        result = admin_supabase.table('postcards').delete().eq('id', postcard_id).execute()
         return result.data
     
     @staticmethod
@@ -115,14 +118,14 @@ class TagDB:
     @staticmethod
     def get_all_tags():
         """Fetch all tags"""
-        result = supabase.table('tags').select('*').execute()
+        result = admin_supabase.table('tags').select('*').execute()
         return result.data
     
     @staticmethod
     def create_tag(name):
         """Create a new tag"""
         tag_id = str(uuid.uuid4())
-        result = supabase.table('tags').insert({'id': tag_id, 'name': name}).execute()
+        result = admin_supabase.table('tags').insert({'id': tag_id, 'name': name}).execute()
         
         if result.data:
             return result.data[0]
@@ -131,7 +134,7 @@ class TagDB:
     @staticmethod
     def link_tag_to_postcard(postcard_id, tag_id):
         """Link a tag to a postcard"""
-        result = supabase.table('postcard_tags').insert({
+        result = admin_supabase.table('postcard_tags').insert({
             'postcard_id': postcard_id, 
             'tag_id': tag_id
         }).execute()
@@ -141,7 +144,7 @@ class TagDB:
     @staticmethod
     def get_postcard_tags(postcard_id):
         """Get all tags for a postcard"""
-        result = supabase.table('postcard_tags')\
+        result = admin_supabase.table('postcard_tags')\
             .select('tags(*)')\
             .eq('postcard_id', postcard_id)\
             .execute()

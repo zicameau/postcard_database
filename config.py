@@ -11,7 +11,8 @@ class Config:
     
     # Supabase configuration
     SUPABASE_URL = os.environ.get('SUPABASE_URL')
-    SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+    SUPABASE_KEY = os.environ.get('SUPABASE_KEY')  # anon/public key
+    SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')  # service role key
     
     # Image upload configuration
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file size

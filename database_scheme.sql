@@ -1,6 +1,9 @@
--- Reset database script - removes all existing data, tables, types, and policies
+-- Comprehensive Database Schema for Postcard Database
 
--- Drop existing tables with cascade to remove dependencies
+-- Ensure UUID extension is available
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Reset database script - removes all existing data, tables, types, and policies
 DROP TABLE IF EXISTS postcard_tags CASCADE;
 DROP TABLE IF EXISTS tags CASCADE;
 DROP TABLE IF EXISTS postcards CASCADE;
@@ -13,6 +16,7 @@ DROP TYPE IF EXISTS user_role CASCADE;
 
 -- Drop existing functions
 DROP FUNCTION IF EXISTS update_modified_column CASCADE;
+DROP FUNCTION IF EXISTS handle_new_user CASCADE;
 
 -- Create enum for postcard types
 CREATE TYPE postcard_type AS ENUM (
@@ -51,12 +55,12 @@ CREATE TYPE user_role AS ENUM (
   'user'
 );
 
--- Users table
+-- Users table (modified to work with Supabase Auth)
 CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY,
   username VARCHAR(50) NOT NULL UNIQUE,
   email VARCHAR(255) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
+  password_hash VARCHAR(255),
   role user_role NOT NULL DEFAULT 'user',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
@@ -74,7 +78,7 @@ CREATE TABLE postcards (
   type postcard_type,
   front_image_url TEXT,
   back_image_url TEXT,
-  user_id UUID REFERENCES users(id),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -122,69 +126,82 @@ BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION update_modified_column();
 
--- Insert an initial admin user
--- Username: admin@example.com
--- Password: Admin123! (this is hashed below)
+-- Enable Row Level Security
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE postcards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE postcard_tags ENABLE ROW LEVEL SECURITY;
+
+-- User table policies
+-- Allow users to view and update their own data
+CREATE POLICY "Users can view their own data" ON users
+    FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update their own data" ON users
+    FOR UPDATE USING (auth.uid() = id);
+
+-- IMPORTANT: Allow the application service role to insert new users
+CREATE POLICY "Service role can insert users" ON users
+    FOR INSERT WITH CHECK (true);
+
+-- IMPORTANT: Allow the application service role to manage all users for admin functions
+CREATE POLICY "Service role can manage all users" ON users
+    FOR ALL USING (true);
+
+-- Postcard table policies
+-- Allow authenticated users to create, view, update, and delete their own postcards
+CREATE POLICY "Users can create postcards" ON postcards
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can view their own postcards" ON postcards
+    FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own postcards" ON postcards
+    FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own postcards" ON postcards
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- Admin policies for postcards
+CREATE POLICY "Admins can manage all postcards" ON postcards
+    FOR ALL USING (
+        EXISTS (
+            SELECT 1 FROM users 
+            WHERE id = auth.uid() AND role = 'admin'
+        )
+    );
+
+-- Tag policies
+-- Allow authenticated users to view tags
+CREATE POLICY "Users can view tags" ON tags
+    FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Postcard tag policies
+CREATE POLICY "Users can view postcard tags" ON postcard_tags
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM postcards 
+            WHERE postcards.id = postcard_tags.postcard_id 
+            AND postcards.user_id = auth.uid()
+        )
+    );
+
+-- Insert an initial admin user for manual testing (optional)
+-- Note: In production, prefer creating admin users through Supabase Auth
 INSERT INTO users (id, username, email, password_hash, role)
 VALUES (
   uuid_generate_v4(),
   'admin',
   'admin@example.com',
-  -- This is a hashed version of 'Admin123!' - you should change this in production
-  'pbkdf2:sha256:600000$aCVDv2O3AuiF$a73a6a9827d05b8a63f30b69c4d8f8a32e6c578bec047d3be0d2cab8ba95d13b',
+  -- This is a placeholder - in production, use Supabase Auth to create admin users
+  'placeholder_hash',
   'admin'
 );
 
-/*
-Note: For Supabase storage, you'll need to:
-1. Create a bucket named 'postcard-images' in the Supabase dashboard
-2. Set the appropriate permissions (public access for read, authenticated for write)
-
-To do this programmatically in SQL, you would use:
-*/
-
--- Create storage bucket for postcard images (if using Supabase SQL)
--- Note: This may need to be done in the Supabase dashboard if SQL access to storage isn't available
--- CREATE BUCKET IF NOT EXISTS "postcard-images";
--- ALTER BUCKET "postcard-images" ENABLE public ACCESS;
-
-/*
-Storage Policies:
-- For reading images (public):
-  CREATE POLICY "Public Access" ON STORAGE.OBJECTS
-    FOR SELECT USING (bucket_id = 'postcard-images');
-
-- For uploading images (authenticated users only):
-  CREATE POLICY "Authenticated Users Can Upload" ON STORAGE.OBJECTS
-    FOR INSERT USING (
-      bucket_id = 'postcard-images' AND
-      auth.role() = 'authenticated'
-    );
-
-- For deleting images (only by owner or admin):
-  CREATE POLICY "Owner or Admin Can Delete" ON STORAGE.OBJECTS
-    FOR DELETE USING (
-      bucket_id = 'postcard-images' AND
-      (
-        auth.uid() = owner OR
-        EXISTS (
-          SELECT 1 FROM users
-          WHERE id = auth.uid() AND role = 'admin'
-        )
-      )
-    );
-*/
-
--- Note about Supabase Auth configuration
-/*
-For Supabase Auth, you'll need to:
-1. Enable email confirmations in the Auth settings
-2. Configure SMTP settings for email delivery
-3. Set up any additional OAuth providers if needed
-
-In the Supabase dashboard:
-- Go to Authentication > Settings
-- Enable "Enable email confirmations"
-- Configure SMTP settings
-- Set Site URL to your application URL
-*/
+-- Optional: Initial tag seeding
+INSERT INTO tags (name) VALUES 
+  ('vintage'),
+  ('landscape'),
+  ('historical'),
+  ('travel'),
+  ('architecture');
