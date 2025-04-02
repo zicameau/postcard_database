@@ -19,7 +19,7 @@
                     <li><a href="{{ url_for('index') }}">Home</a></li>
                     <li><a href="{{ url_for('list_postcards') }}">Browse Postcards</a></li>
                     {% if current_user.is_authenticated %}
-                        <li><a href="{{ url_for('add_postcard') }}">Add Postcard</a></li>
+                        <li><a href="{{ url_for('add_postcard') }}">Submit Postcard</a></li>
                         {% if current_user.is_admin %}
                             <li><a href="{{ url_for('admin_dashboard') }}" class="admin-link">Admin</a></li>
                         {% endif %}

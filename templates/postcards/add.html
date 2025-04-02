@@ -4,9 +4,9 @@
 
 {% block content %}
 <section class="postcard-form">
-    <h1>Add New Postcard</h1>
+    <h1>Submit a Postcard for Review</h1>
     
-    <form action="{{ url_for('add_postcard') }}" method="post" enctype="multipart/form-data">
+    <form action="{{ url_for('add_postcard') }}" method="post" enctype="multipart/form-data" id="postcard-form">
         <div class="form-group">
             <label for="title">Title *</label>
             <input type="text" id="title" name="title" required>
@@ -84,7 +84,8 @@
         </div>
         
         <div class="form-actions">
-            <button type="submit" class="btn primary">Add Postcard</button>
+            <button type="submit" name="action" value="draft" class="btn secondary">Save as Draft</button>
+            <button type="submit" name="action" value="submit" class="btn primary">Submit for Review</button>
             <a href="{{ url_for('list_postcards') }}" class="btn secondary">Cancel</a>
         </div>
     </form>
@@ -129,6 +130,59 @@
                 backPreview.innerHTML = '<div class="placeholder">No image selected</div>';
             }
         });
+        
+        // Form submission handling
+        const form = document.getElementById('postcard-form');
+        const draftBtn = form.querySelector('button[value="draft"]');
+        const submitBtn = form.querySelector('button[value="submit"]');
+        
+        // Prevent form from submitting twice
+        form.addEventListener('submit', function(e) {
+            const clickedButton = document.activeElement;
+            
+            // Set hidden input to track which button was clicked
+            if (clickedButton === draftBtn) {
+                clickedButton.value = 'draft';
+            } else if (clickedButton === submitBtn) {
+                // Confirm submission if important fields are not filled
+                const requiredFields = form.querySelectorAll('[required]');
+                let isValid = true;
+                
+                requiredFields.forEach(field => {
+                    if (!field.value.trim()) {
+                        isValid = false;
+                        field.classList.add('error');
+                    } else {
+                        field.classList.remove('error');
+                    }
+                });
+                
+                if (!isValid) {
+                    e.preventDefault();
+                    alert('Please fill in all required fields before submitting.');
+                    return false;
+                }
+                
+                // Optional: Add confirmation for submission
+                const confirmSubmit = confirm('Are you sure you want to submit this postcard for review? Once submitted, you cannot edit the postcard until it is reviewed.');
+                if (!confirmSubmit) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                clickedButton.value = 'submit';
+            }
+        });
     });
 </script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-group input.error, 
+    .form-group select.error {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+</style>
 {% endblock %}

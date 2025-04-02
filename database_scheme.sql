@@ -12,11 +12,8 @@ DROP TABLE IF EXISTS users CASCADE;
 -- Drop existing types
 DROP TYPE IF EXISTS postcard_type CASCADE;
 DROP TYPE IF EXISTS postcard_era CASCADE;
+DROP TYPE IF EXISTS postcard_status CASCADE;
 DROP TYPE IF EXISTS user_role CASCADE;
-
--- Drop existing functions
-DROP FUNCTION IF EXISTS update_modified_column CASCADE;
-DROP FUNCTION IF EXISTS handle_new_user CASCADE;
 
 -- Create enum for postcard types
 CREATE TYPE postcard_type AS ENUM (
@@ -49,6 +46,14 @@ CREATE TYPE postcard_era AS ENUM (
   '2020s'
 );
 
+-- Create enum for postcard status
+CREATE TYPE postcard_status AS ENUM (
+  'staged',    -- Newly submitted, awaiting review
+  'approved',  -- Approved and visible to all users
+  'rejected',  -- Rejected by admin
+  'draft'      -- Saved by user but not submitted
+);
+
 -- Create enum for user roles
 CREATE TYPE user_role AS ENUM (
   'admin',
@@ -79,6 +84,8 @@ CREATE TABLE postcards (
   front_image_url TEXT,
   back_image_url TEXT,
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  status postcard_status NOT NULL DEFAULT 'draft',
+  review_notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -101,6 +108,7 @@ CREATE INDEX idx_postcards_era ON postcards(era);
 CREATE INDEX idx_postcards_type ON postcards(type);
 CREATE INDEX idx_postcards_manufacturer ON postcards(manufacturer);
 CREATE INDEX idx_postcards_user_id ON postcards(user_id);
+CREATE INDEX idx_postcards_status ON postcards(status);
 CREATE INDEX idx_tags_name ON tags(name);
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_email ON users(email);
@@ -154,13 +162,25 @@ CREATE POLICY "Users can create postcards" ON postcards
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can view their own postcards" ON postcards
-    FOR SELECT USING (auth.uid() = user_id);
+    FOR SELECT USING (
+        auth.uid() = user_id AND 
+        status IN ('draft', 'staged', 'approved', 'rejected')
+    );
+
+CREATE POLICY "Users can view approved postcards" ON postcards
+    FOR SELECT USING (status = 'approved');
 
 CREATE POLICY "Users can update their own postcards" ON postcards
-    FOR UPDATE USING (auth.uid() = user_id);
+    FOR UPDATE USING (
+        auth.uid() = user_id AND 
+        status IN ('draft', 'rejected')
+    );
 
 CREATE POLICY "Users can delete their own postcards" ON postcards
-    FOR DELETE USING (auth.uid() = user_id);
+    FOR DELETE USING (
+        auth.uid() = user_id AND 
+        status IN ('draft', 'rejected')
+    );
 
 -- Admin policies for postcards
 CREATE POLICY "Admins can manage all postcards" ON postcards
@@ -182,7 +202,7 @@ CREATE POLICY "Users can view postcard tags" ON postcard_tags
         EXISTS (
             SELECT 1 FROM postcards 
             WHERE postcards.id = postcard_tags.postcard_id 
-            AND postcards.user_id = auth.uid()
+            AND (postcards.user_id = auth.uid() OR postcards.status = 'approved')
         )
     );
 

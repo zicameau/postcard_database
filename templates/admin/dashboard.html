@@ -22,7 +22,7 @@
         <div class="stat-card">
             <h3>Tags</h3>
             <p class="stat-number">{{ stats.total_tags }}</p>
-            <a href="#" class="btn primary">Manage Tags</a>
+            <a href="{{ url_for('admin_tags') }}" class="btn primary">Manage Tags</a>
         </div>
     </div>
     
@@ -43,6 +43,7 @@
                 <h3>Content Management</h3>
                 <ul>
                     <li><a href="{{ url_for('list_postcards') }}">View All Postcards</a></li>
+                    <li><a href="{{ url_for('admin_staged_postcards') }}">Review Staged Postcards</a></li>
                     <li><a href="#">Bulk Upload</a></li>
                     <li><a href="#">Export Database</a></li>
                 </ul>
@@ -64,4 +65,4 @@
         <p>Coming soon: Activity logging and monitoring</p>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

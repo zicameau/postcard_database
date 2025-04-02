@@ -52,13 +52,13 @@
             {% if postcards|length == 0 %}
                 <div class="empty-collection">
                     <p>You haven't added any postcards yet.</p>
-                    <a href="{{ url_for('add_postcard') }}" class="btn primary">Add Your First Postcard</a>
+                    <a href="{{ url_for('submit_postcard') }}" class="btn primary">Add Your First Postcard</a>
                 </div>
             {% endif %}
         {% else %}
             <div class="empty-collection">
                 <p>You haven't added any postcards yet.</p>
-                <a href="{{ url_for('add_postcard') }}" class="btn primary">Add Your First Postcard</a>
+                <a href="{{ url_for('submit_postcard') }}" class="btn primary">Add Your First Postcard</a>
             </div>
         {% endif %}
     </div>

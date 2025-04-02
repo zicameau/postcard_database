@@ -93,6 +93,7 @@ def list_postcards():
         page=page
     )
 
+# Modify existing view_postcard route to handle different statuses
 @app.route('/postcards/<uuid:postcard_id>')
 def view_postcard(postcard_id):
     """View a single postcard"""
@@ -102,10 +103,29 @@ def view_postcard(postcard_id):
         flash('Postcard not found', 'error')
         return redirect(url_for('list_postcards'))
     
+    # Check postcard visibility
+    is_owner = current_user.is_authenticated and postcard['user_id'] == current_user.id
+    is_admin = current_user.is_authenticated and current_user.is_admin
+    
+    # Determine if postcard can be viewed
+    if (postcard['status'] != 'approved' and 
+        not is_owner and 
+        not is_admin):
+        flash('This postcard is not available for viewing', 'error')
+        return redirect(url_for('list_postcards'))
+    
     # Get tags for this postcard
     tags = TagDB.get_postcard_tags(str(postcard_id))
     
-    return render_template('postcards/detail.html', postcard=postcard, tags=tags)
+    # Pass additional context about user's permissions
+    context = {
+        'postcard': postcard, 
+        'tags': tags,
+        'can_submit': is_owner and postcard['status'] == 'draft',
+        'can_review': is_admin and postcard['status'] == 'staged'
+    }
+    
+    return render_template('postcards/detail.html', **context)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -404,7 +424,6 @@ def admin_tags():
     tags = TagDB.get_all_tags()
     return render_template('admin/tags.html', tags=tags)
 
-# Protected routes for authenticated users
 @app.route('/postcards/add', methods=['GET', 'POST'])
 @login_required
 def add_postcard():
@@ -419,6 +438,9 @@ def add_postcard():
         is_posted = 'is_posted' in request.form
         is_written = 'is_written' in request.form
         tags = request.form.get('tags', '').split(',')
+        
+        # Determine action (draft or submit)
+        action = request.form.get('action', 'draft')
         
         # Validate required fields
         if not title:
@@ -450,7 +472,8 @@ def add_postcard():
             'is_written': is_written,
             'front_image_url': front_image_url,
             'back_image_url': back_image_url,
-            'user_id': current_user.id  # Add user ID to track ownership
+            'user_id': current_user.id,  # Add user ID to track ownership
+            'status': 'draft' if action == 'draft' else 'staged'
         }
         
         # Save to database
@@ -471,8 +494,13 @@ def add_postcard():
                     if tag:
                         TagDB.link_tag_to_postcard(postcard['id'], tag['id'])
             
-            flash('Postcard added successfully', 'success')
-            return redirect(url_for('view_postcard', postcard_id=postcard['id']))
+            # Determine flash message based on action
+            if action == 'draft':
+                flash('Postcard saved as draft', 'success')
+                return redirect(url_for('user_profile'))
+            else:
+                flash('Postcard submitted for review', 'success')
+                return redirect(url_for('view_postcard', postcard_id=postcard['id']))
         else:
             flash('Failed to add postcard', 'error')
     
@@ -481,6 +509,85 @@ def add_postcard():
     types = PostcardDB.get_postcard_types()
     
     return render_template('postcards/add.html', eras=eras, types=types)
+
+@app.route('/postcards/<uuid:postcard_id>/submit', methods=['POST'])
+@login_required
+def submit_postcard(postcard_id):
+    """Submit a draft postcard for review"""
+    postcard = PostcardDB.get_postcard(str(postcard_id))
+    
+    if not postcard:
+        flash('Postcard not found', 'error')
+        return redirect(url_for('list_postcards'))
+    
+    # Check if user owns this postcard or is admin
+    if postcard['user_id'] != current_user.id and not current_user.is_admin:
+        flash('You do not have permission to submit this postcard', 'error')
+        return redirect(url_for('list_postcards'))
+    
+    # Check current status
+    if postcard['status'] != 'draft':
+        flash('Only draft postcards can be submitted for review', 'error')
+        return redirect(url_for('view_postcard', postcard_id=postcard_id))
+    
+    # Stage the postcard
+    staged_postcard = PostcardDB.stage_postcard(str(postcard_id))
+    
+    if staged_postcard:
+        flash('Postcard submitted for review', 'success')
+    else:
+        flash('Failed to submit postcard', 'error')
+    
+    return redirect(url_for('view_postcard', postcard_id=postcard_id))
+
+@app.route('/admin/postcards/staged')
+@login_required
+@requires_admin
+def admin_staged_postcards():
+    """View all staged postcards for admin review"""
+    page = request.args.get('page', 1, type=int)
+    per_page = 20
+    offset = (page - 1) * per_page
+    
+    # Fetch staged postcards
+    staged_postcards = PostcardDB.get_staged_postcards(limit=per_page, offset=offset)
+    
+    return render_template('admin/staged_postcards.html', postcards=staged_postcards, page=page)
+
+@app.route('/admin/postcards/<uuid:postcard_id>/review', methods=['POST'])
+@login_required
+@requires_admin
+def review_postcard(postcard_id):
+    """Admin review of a staged postcard"""
+    # Get form data
+    action = request.form.get('action')
+    review_notes = request.form.get('review_notes', '').strip()
+    
+    # Validate input
+    if action not in ['approve', 'reject']:
+        flash('Invalid review action', 'error')
+        return redirect(url_for('admin_staged_postcards'))
+    
+    # Prepare status based on action
+    status = 'approved' if action == 'approve' else 'rejected'
+    
+    # Review the postcard
+    reviewed_postcard = PostcardDB.review_postcard(
+        str(postcard_id), 
+        status, 
+        review_notes if review_notes else None
+    )
+    
+    if reviewed_postcard:
+        # Success message
+        if status == 'approved':
+            flash('Postcard approved successfully', 'success')
+        else:
+            flash('Postcard rejected', 'warning')
+    else:
+        flash('Failed to process postcard review', 'error')
+    
+    return redirect(url_for('admin_staged_postcards'))
 
 @app.route('/postcards/<uuid:postcard_id>/edit', methods=['GET', 'POST'])
 @login_required

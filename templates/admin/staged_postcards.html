@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Staged Postcards | Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <h1>Staged Postcards Awaiting Review</h1>
+    
+    {% if postcards %}
+        <div class="postcard-grid">
+            {% for postcard in postcards %}
+                <div class="postcard-card staged">
+                    <a href="{{ url_for('view_postcard', postcard_id=postcard.id) }}">
+                        {% if postcard.front_image_url %}
+                            <img src="{{ postcard.front_image_url }}" alt="{{ postcard.title }}" class="postcard-image">
+                        {% else %}
+                            <div class="postcard-placeholder">No Image</div>
+                        {% endif %}
+                        <div class="postcard-info">
+                            <h3>{{ postcard.title }}</h3>
+                            <p class="era">{{ postcard.era }}</p>
+                            <p class="type">{{ postcard.type }}</p>
+                            <div class="staged-details">
+                                <span class="badge staged">Staged</span>
+                                <span class="submitter">Submitted by: {{ postcard.username or 'Unknown' }}</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="pagination">
+            {% if page > 1 %}
+                <a href="{{ url_for('admin_staged_postcards', page=page-1) }}" class="btn pagination-prev">Previous</a>
+            {% endif %}
+            
+            <span class="pagination-current">Page {{ page }}</span>
+            
+            {% if postcards|length == 20 %}
+                <a href="{{ url_for('admin_staged_postcards', page=page+1) }}" class="btn pagination-next">Next</a>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="no-postcards">
+            <p>No postcards are currently awaiting review.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .postcard-card.staged {
+        position: relative;
+        border: 2px solid #ffc107;
+        box-shadow: 0 4px 6px rgba(255, 193, 7, 0.1);
+    }
+    
+    .staged-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 0.5rem;
+        font-size: 0.8rem;
+        color: #666;
+    }
+    
+    .badge.staged {
+        background-color: #ffc107;
+        color: #212529;
+        padding: 0.2rem 0.5rem;
+        border-radius: 50px;
+    }
+    
+    .no-postcards {
+        text-align: center;
+        padding: 2rem;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Optional: Add hover effect to staged postcards
+        const stagedCards = document.querySelectorAll('.postcard-card.staged');
+        stagedCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.03)';
+                this.style.boxShadow = '0 6px 12px rgba(255, 193, 7, 0.2)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+                this.style.boxShadow = 'none';
+            });
+        });
+    });
+</script>
+{% endblock %}

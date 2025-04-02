@@ -9,15 +9,44 @@ supabase = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
 admin_supabase = create_client(Config.SUPABASE_URL, Config.SUPABASE_SERVICE_KEY)
 
 class PostcardDB:
+
     @staticmethod
-    def get_all_postcards(limit=20, offset=0, filters=None):
-        """Fetch all postcards with optional filtering and pagination"""
-        query = admin_supabase.table('postcards').select('*')
+    def stage_postcard(postcard_id):
+        """
+        Move a draft postcard to staged status for admin review
+        """
+        result = admin_supabase.table('postcards').update({
+            'status': 'staged'
+        }).eq('id', postcard_id).execute()
         
-        if filters:
-            for field, value in filters.items():
-                if value:
-                    query = query.eq(field, value)
+        return result.data[0] if result.data else None
+    
+    @staticmethod
+    def review_postcard(postcard_id, status, review_notes=None):
+        """
+        Admin review of a staged postcard
+        
+        :param postcard_id: ID of the postcard to review
+        :param status: New status ('approved' or 'rejected')
+        :param review_notes: Optional admin comments
+        """
+        update_data = {
+            'status': status
+        }
+        
+        if review_notes is not None:
+            update_data['review_notes'] = review_notes
+        
+        result = admin_supabase.table('postcards').update(update_data).eq('id', postcard_id).execute()
+        
+        return result.data[0] if result.data else None
+    
+    @staticmethod
+    def get_staged_postcards(limit=20, offset=0):
+        """
+        Fetch all staged postcards for admin review
+        """
+        query = admin_supabase.table('postcards').select('*').eq('status', 'staged')
         
         # Apply ordering
         query = query.order('created_at', desc=True)
@@ -25,11 +54,54 @@ class PostcardDB:
         # Apply limit
         query = query.limit(limit)
         
-        # Handle pagination differently since .offset() isn't available
-        # We'll use range instead, which is supported by Supabase
+        # Handle pagination
         if offset > 0:
-            # Calculate the range based on offset and limit
-            # Supabase uses inclusive start, exclusive end
+            start = offset
+            end = offset + limit - 1
+            query = query.range(start, end)
+        
+        result = query.execute()
+        
+        return result.data
+
+    @staticmethod
+    def get_all_postcards(limit=20, offset=0, filters=None, user_id=None, status=None):
+        """
+        Fetch postcards with advanced filtering and optional status filtering
+        
+        :param limit: Number of records to return
+        :param offset: Pagination offset
+        :param filters: Additional filters to apply
+        :param user_id: Optionally filter by user ID
+        :param status: Filter by postcard status (for admins)
+        """
+        query = admin_supabase.table('postcards').select('*')
+        
+        # Apply basic filters
+        if filters:
+            for field, value in filters.items():
+                if value:
+                    query = query.eq(field, value)
+        
+        # Filter by user ID if provided
+        if user_id:
+            query = query.eq('user_id', user_id)
+        
+        # Status filtering (for admins)
+        if status:
+            query = query.eq('status', status)
+        else:
+            # Default behavior for non-admin users
+            query = query.eq('status', 'approved')
+        
+        # Apply ordering
+        query = query.order('created_at', desc=True)
+        
+        # Apply limit
+        query = query.limit(limit)
+        
+        # Handle pagination
+        if offset > 0:
             start = offset
             end = offset + limit - 1
             query = query.range(start, end)
@@ -49,11 +121,17 @@ class PostcardDB:
     
     @staticmethod
     def create_postcard(postcard_data):
-        """Create a new postcard"""
+        """
+        Create a new postcard with default draft status
+        """
+        # Ensure status is set to draft if not specified
+        if 'status' not in postcard_data:
+            postcard_data['status'] = 'draft'
+        
         # Generate UUID for the postcard
         if 'id' not in postcard_data:
             postcard_data['id'] = str(uuid.uuid4())
-            
+        
         result = admin_supabase.table('postcards').insert(postcard_data).execute()
         
         if result.data:
