@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Tags | Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-section">
+    <h1>Manage Tags</h1>
+    
+    <div class="admin-controls">
+        <form action="{{ url_for('admin_tags') }}" method="post" class="inline-form">
+            <input type="text" name="tag_name" placeholder="New tag name" required>
+            <button type="submit" class="btn primary">Add Tag</button>
+        </form>
+    </div>
+    
+    <div class="tag-list">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Postcards</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tag in tags %}
+                <tr>
+                    <td>{{ tag.id }}</td>
+                    <td>{{ tag.name }}</td>
+                    <td>Count</td>
+                    <td class="actions">
+                        <a href="#" class="btn small">Edit</a>
+                        <form action="#" method="post" class="inline-form">
+                            <input type="hidden" name="tag_id" value="{{ tag.id }}">
+                            <button type="submit" class="btn small danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 

@@ -382,6 +382,28 @@ def admin_edit_user(user_id):
     
     return render_template('admin/edit_user.html', user=user)
 
+@app.route('/admin')
+@login_required
+@requires_admin
+def admin_dashboard():
+    """Admin dashboard with links to all admin functions"""
+    # Get some basic stats for the dashboard
+    stats = {
+        'total_users': len(UserDB.get_all_users(limit=1000)),
+        'total_postcards': len(PostcardDB.get_all_postcards(limit=1000)),
+        'total_tags': len(TagDB.get_all_tags())
+    }
+    
+    return render_template('admin/dashboard.html', stats=stats)
+
+@app.route('/admin/tags')
+@login_required
+@requires_admin
+def admin_tags():
+    """Admin page to view and manage all tags"""
+    tags = TagDB.get_all_tags()
+    return render_template('admin/tags.html', tags=tags)
+
 # Protected routes for authenticated users
 @app.route('/postcards/add', methods=['GET', 'POST'])
 @login_required

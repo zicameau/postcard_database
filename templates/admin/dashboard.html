@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard | Postcard Database{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <h1>Admin Dashboard</h1>
+    
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <h3>Users</h3>
+            <p class="stat-number">{{ stats.total_users }}</p>
+            <a href="{{ url_for('admin_users') }}" class="btn primary">Manage Users</a>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Postcards</h3>
+            <p class="stat-number">{{ stats.total_postcards }}</p>
+            <a href="{{ url_for('list_postcards') }}" class="btn primary">Manage Postcards</a>
+        </div>
+        
+        <div class="stat-card">
+            <h3>Tags</h3>
+            <p class="stat-number">{{ stats.total_tags }}</p>
+            <a href="#" class="btn primary">Manage Tags</a>
+        </div>
+    </div>
+    
+    <div class="admin-tools">
+        <h2>Admin Tools</h2>
+        
+        <div class="admin-tools-grid">
+            <div class="tool-card">
+                <h3>User Management</h3>
+                <ul>
+                    <li><a href="{{ url_for('admin_users') }}">View All Users</a></li>
+                    <li><a href="#">Add New Admin</a></li>
+                    <li><a href="#">User Reports</a></li>
+                </ul>
+            </div>
+            
+            <div class="tool-card">
+                <h3>Content Management</h3>
+                <ul>
+                    <li><a href="{{ url_for('list_postcards') }}">View All Postcards</a></li>
+                    <li><a href="#">Bulk Upload</a></li>
+                    <li><a href="#">Export Database</a></li>
+                </ul>
+            </div>
+            
+            <div class="tool-card">
+                <h3>System Tools</h3>
+                <ul>
+                    <li><a href="#">Storage Settings</a></li>
+                    <li><a href="#">Database Maintenance</a></li>
+                    <li><a href="#">System Logs</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="recent-activity">
+        <h2>Recent Activity</h2>
+        <p>Coming soon: Activity logging and monitoring</p>
+    </div>
+</div>
+{% endblock %} 
